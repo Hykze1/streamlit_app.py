@@ -13,8 +13,7 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-
-def scrape_ibdb():
+def scrape_ibdb(session_state):
     driver = webdriver.Chrome()
     driver.get("https://www.ibdb.com/shows")
 
@@ -29,8 +28,13 @@ def scrape_ibdb():
     driver.set_page_load_timeout(15)
 
     for i, block in enumerate(blocks):
+        if session_state.stop:
+            print("🛑 Scraping stopped by user.")
+            break
+
         if len(all_shows) >= 40:
             break
+
         try:
             relative_link = block.select_one("a")["href"]
             detail_url = f"https://www.ibdb.com{relative_link}"
@@ -48,7 +52,7 @@ def scrape_ibdb():
 
             type_elements = detail_soup.select(".col.s12.txt-paddings.tag-block-compact i")
             show_types = [elem.text.strip() for elem in type_elements]
-            show_types = list(dict.fromkeys(show_types))  # remove duplicates
+            show_types = list(dict.fromkeys(show_types))
 
             date_blocks = detail_soup.select(".xt-main-title")
             opening_date = date_blocks[0].text.strip() if len(date_blocks) > 0 else "N/A"
@@ -101,7 +105,6 @@ def save_data(df_or_list, base_dir="data",
     if os.path.exists(master_path):
         master_df = pd.read_csv(master_path)
         combined = pd.concat([master_df, df]).drop_duplicates(subset=["Title", "Opening Date"])
-        # Detect new shows:
         new_shows_df = combined.merge(master_df, how='outer', indicator=True)
         new_shows_df = new_shows_df[new_shows_df['_merge'] == 'left_only']
         new_shows = new_shows_df.drop(columns=['_merge']).to_dict('records')
@@ -113,7 +116,6 @@ def save_data(df_or_list, base_dir="data",
     df.to_csv(snapshot_name, index=False)
     print(f"✅ Data saved to:\n - {master_path}\n - {snapshot_name}")
 
-    # Send email if new shows found & email info provided
     if new_shows and sender_email and sender_password and recipient_email:
         send_email(new_shows, sender_email, sender_password, recipient_email)
 
