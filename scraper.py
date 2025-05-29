@@ -12,6 +12,8 @@ import schedule
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from selenium.webdriver.chrome.options import Options
+from webdriver_manager.chrome import ChromeDriverManager
 
 def scrape_ibdb(session_state):
     driver = webdriver.Chrome()
