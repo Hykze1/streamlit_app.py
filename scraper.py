@@ -1,3 +1,5 @@
+pip install streamlit selenium beautifulsoup4 pandas
+
 import re
 import time
 import os
